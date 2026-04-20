@@ -1,7 +1,8 @@
 import { useState, FormEvent } from 'react';
-import { motion } from 'motion/react';
-import { Settings, Home, Users, Star, LogOut, Plus, Calendar, CheckCircle, Edit, Save, Trash2 } from 'lucide-react';
-import { useData, Property, DealerInfo } from './lib/DataContext';
+import { motion, AnimatePresence } from 'motion/react';
+import { Settings, Home, Users, Star, LogOut, Plus, Calendar, CheckCircle, Edit, Save, Trash2, Menu, X, Mail } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useData, Property, DealerInfo, ContactInfo } from './lib/DataContext';
 import { Button } from './components/ui/button';
 
 export function AdminDashboard() {
@@ -10,7 +11,8 @@ export function AdminDashboard() {
   const [loginError, setLoginError] = useState('');
 
   const [activeTab, setActiveTab] = useState('appointments');
-  const { appointments, ratings, updateAppointmentStatus, properties, updateProperty, addProperty, deleteProperty, dealerInfo, updateDealerInfo, adminPassword, updateAdminPassword } = useData();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const { appointments, ratings, updateAppointmentStatus, properties, updateProperty, addProperty, deleteProperty, dealerInfo, updateDealerInfo, contactInfo, updateContactInfo, adminPassword, updateAdminPassword } = useData();
 
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [tempProperty, setTempProperty] = useState<Property | null>(null);
@@ -23,6 +25,9 @@ export function AdminDashboard() {
   const [isEditingDealer, setIsEditingDealer] = useState(false);
   const [tempDealer, setTempDealer] = useState<DealerInfo | null>(null);
 
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [tempContact, setTempContact] = useState<ContactInfo | null>(null);
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPasswordValue, setNewPasswordValue] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -33,6 +38,7 @@ export function AdminDashboard() {
     { id: 'ratings', label: 'Ratings', icon: Star },
     { id: 'properties', label: 'Properties', icon: Home },
     { id: 'dealer', label: 'Dealer Info', icon: Users },
+    { id: 'contact', label: 'Contact Details', icon: Mail },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -57,6 +63,18 @@ export function AdminDashboard() {
     if (tempDealer) {
       updateDealerInfo(tempDealer);
       setIsEditingDealer(false);
+    }
+  };
+
+  const handleEditContact = () => {
+    setIsEditingContact(true);
+    setTempContact({ ...contactInfo });
+  };
+
+  const handleSaveContact = () => {
+    if (tempContact) {
+      updateContactInfo(tempContact);
+      setIsEditingContact(false);
     }
   };
 
@@ -128,7 +146,7 @@ export function AdminDashboard() {
             </Button>
           </form>
           <div className="mt-6 text-center">
-             <a href="/" className="text-sm text-muted-foreground hover:text-gold transition-colors inline-block">← Back to main site</a>
+             <Link to="/" className="text-sm text-muted-foreground hover:text-gold transition-colors inline-block">← Back to main site</Link>
           </div>
         </motion.div>
       </div>
@@ -136,48 +154,87 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
-      {/* Sidebar */}
-      <div className="w-64 border-r border-white/10 bg-secondary/30 p-6 flex flex-col">
-        <div className="flex items-center gap-2 mb-12">
+    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row overflow-x-hidden">
+      {/* Mobile Topbar */}
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-white/10 glass z-50 sticky top-0">
+        <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-gold flex items-center justify-center text-background font-serif font-bold text-xl">
             B
           </div>
-          <span className="font-serif text-xl font-semibold tracking-wide">
-            Bangalore North <span className="text-gold text-sm">Admin</span>
+          <span className="font-serif text-lg font-semibold tracking-wide">
+            BNRE <span className="text-gold text-xs">Admin</span>
           </span>
         </div>
+        <button onClick={() => setIsMobileSidebarOpen(true)} className="p-2 text-foreground">
+          <Menu className="w-6 h-6" />
+        </button>
+      </div>
 
-        <nav className="flex-1 space-y-2">
+      {/* Sidebar Overlay (Mobile) */}
+      <AnimatePresence>
+        {isMobileSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className="md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-[90]"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-[100] w-64 border-r border-white/10 bg-background md:bg-secondary/30 p-6 flex flex-col transition-transform duration-300 md:relative md:translate-x-0 ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-gold flex items-center justify-center text-background font-serif font-bold text-xl">
+              B
+            </div>
+            <span className="font-serif text-xl font-semibold tracking-wide hidden md:inline">
+              Bangalore North <span className="text-gold text-sm block -mt-1">Admin</span>
+            </span>
+            <span className="font-serif text-xl font-semibold tracking-wide md:hidden">
+              Admin
+            </span>
+          </div>
+          <button onClick={() => setIsMobileSidebarOpen(false)} className="md:hidden p-2 text-muted-foreground hover:text-foreground">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <nav className="flex-1 space-y-2 overflow-y-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setIsMobileSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   activeTab === tab.id
                     ? 'bg-gold text-background font-medium shadow-[0_0_15px_rgba(212,175,55,0.3)]'
                     : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-5 h-5 shrink-0" />
                 {tab.label}
               </button>
             );
           })}
         </nav>
 
-        <a href="/" className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-gold transition-colors mt-auto">
-          <LogOut className="w-5 h-5" />
+        <Link to="/" className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-gold transition-colors mt-auto pt-4 border-t border-white/10">
+          <LogOut className="w-5 h-5 shrink-0" />
           Back to Website
-        </a>
+        </Link>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-10 overflow-y-auto w-full">
-        <div className="flex justify-between items-center mb-10">
-          <h1 className="text-3xl font-serif font-medium capitalize">Manage {activeTab}</h1>
+      <div className="flex-1 p-6 md:p-10 h-[calc(100vh-73px)] md:h-screen overflow-y-auto overflow-x-hidden w-full">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
+          <h1 className="text-2xl md:text-3xl font-serif font-medium capitalize">Manage {activeTab}</h1>
           {activeTab === 'properties' && !isAddingProperty && (
             <button 
               onClick={() => setIsAddingProperty(true)}
@@ -471,6 +528,89 @@ export function AdminDashboard() {
                         <p><strong className="text-gold block mb-1">Paragraph 1:</strong> <span className="text-foreground/90">{dealerInfo.legacyDesc1}</span></p>
                         <p><strong className="text-gold block mb-1">Paragraph 2:</strong> <span className="text-foreground/90">{dealerInfo.legacyDesc2}</span></p>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'contact' && (
+            <div className="glass-card rounded-2xl p-6 md:p-8">
+              {isEditingContact && tempContact ? (
+                <div className="space-y-6 max-w-2xl">
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-2 block">Phone Number</label>
+                    <input 
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-gold outline-none" 
+                      value={tempContact.phone} 
+                      onChange={e => setTempContact({...tempContact, phone: e.target.value})} 
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-2 block">WhatsApp Number</label>
+                    <input 
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-gold outline-none" 
+                      value={tempContact.whatsapp} 
+                      onChange={e => setTempContact({...tempContact, whatsapp: e.target.value})} 
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-2 block">Email Address</label>
+                    <input 
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-gold outline-none" 
+                      value={tempContact.email} 
+                      onChange={e => setTempContact({...tempContact, email: e.target.value})} 
+                      placeholder="hello@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-2 block">Office Address</label>
+                    <textarea 
+                      className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm focus:border-gold outline-none min-h-[100px]" 
+                      value={tempContact.address} 
+                      onChange={e => setTempContact({...tempContact, address: e.target.value})} 
+                      placeholder="Level 42, The Imperial..."
+                    />
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <Button type="button" variant="ghost" onClick={() => setIsEditingContact(false)}>Cancel</Button>
+                    <Button type="button" className="bg-gold text-background hover:bg-gold-light" onClick={handleSaveContact}>
+                      <Save className="w-4 h-4 mr-2" /> Save Contact Info
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="max-w-2xl">
+                  <div className="flex justify-between items-start mb-8">
+                    <h3 className="text-2xl font-serif text-gold">Public Contact Information</h3>
+                    <Button type="button" variant="outline" onClick={handleEditContact} className="border-gold/30 hover:border-gold text-gold">
+                      <Edit className="w-4 h-4 mr-2" /> Edit Details
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="text-sm uppercase tracking-wider text-muted-foreground mb-2 font-medium">Main Phone</h4>
+                        <p className="text-foreground/90 font-medium">{contactInfo.phone}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm uppercase tracking-wider text-muted-foreground mb-2 font-medium">WhatsApp</h4>
+                        <p className="text-foreground/90 font-medium">{contactInfo.whatsapp}</p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm uppercase tracking-wider text-muted-foreground mb-2 font-medium">General Email</h4>
+                      <p className="text-foreground/90">{contactInfo.email}</p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm uppercase tracking-wider text-muted-foreground mb-2 font-medium">Office Location</h4>
+                      <p className="text-foreground/90 whitespace-pre-line">{contactInfo.address}</p>
                     </div>
                   </div>
                 </div>
